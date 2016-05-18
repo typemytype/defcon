@@ -2,7 +2,7 @@
 A set of objects that are suited to being the basis
 of font development tools. This works on UFO files.
 """
-
+from __future__ import absolute_import
 version = "0.1"
 
 from defcon.errors import DefconError
@@ -24,6 +24,7 @@ from defcon.objects.lib import Lib
 from defcon.objects.uniData import UnicodeData
 from defcon.objects.color import Color
 from defcon.objects.guideline import Guideline
+from defcon.objects.layoutEngine import LayoutEngine
 
 def registerRepresentationFactory(cls, name, factory, destructiveNotifications=None):
     """

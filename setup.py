@@ -1,19 +1,19 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
 import sys
-from distutils.core import setup
+from setuptools import setup
 
 try:
     import fontTools
 except:
-    print "*** Warning: defcon requires FontTools, see:"
-    print "    fonttools.sf.net"
+    print("*** Warning: defcon requires fontTools, see:")
+    print("    https://github.com/behdad/fonttools")
 
 try:
-    import robofab
+    import ufoLib
 except:
-    print "*** Warning: defcon requires RoboFab, see:"
-    print "    robofab.com"
+    print("*** Warning: defcon requires ufoLib, see:")
+    print("    https://github.com/unified-font-object/ufoLib")
 
 if "sdist" in sys.argv:
     import os
@@ -39,6 +39,12 @@ setup(name="defcon",
     author_email="tal@typesupply.com",
     url="http://code.typesupply.com",
     license="MIT",
-    packages=["defcon"],
+    packages=[
+        "defcon",
+        "defcon.objects",
+        "defcon.pens",
+        "defcon.test",
+        "defcon.tools"
+    ],
     package_dir={"":"Lib"}
 )

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import weakref
 from ufoLib import UFOReader
 from defcon.objects.base import BaseObject
@@ -11,18 +12,27 @@ class LayerSet(BaseObject):
 
     **This object posts the following notifications:**
 
-    ============================
-    Name
-    ============================
-    LayerSet.Changed
-    LayerSet.LayersChanged
-    LayerSet.LayerChanged
-    LayerSet.DefaultLayerChanged
-    LayerSet.LayerOrderChanged
-    LayerSet.LayerAdded
-    LayerSet.LayerDeleted
-    LayerSet.LayerWillBeDeleted
-    ============================
+    +-------------------------------+
+    |Name                           |
+    +===============================+
+    |LayerSet.Changed               |
+    +-------------------------------+
+    |LayerSet.LayersChanged         |
+    +-------------------------------+
+    |LayerSet.LayerChanged          |
+    +-------------------------------+
+    |LayerSet.DefaultLayerWillChange|
+    +-------------------------------+
+    |LayerSet.DefaultLayerChanged   |
+    +-------------------------------+
+    |LayerSet.LayerOrderChanged     |
+    +-------------------------------+
+    |LayerSet.LayerAdded            |
+    +-------------------------------+
+    |LayerSet.LayerDeleted          |
+    +-------------------------------+
+    |LayerSet.LayerWillBeDeleted    |
+    +-------------------------------+
 
     This object behaves like a dict. For example, to get a particular
     layer::
@@ -38,7 +48,7 @@ class LayerSet(BaseObject):
     changeNotificationName = "LayerSet.Changed"
     representationFactories = {}
 
-    def __init__(self, font=None, layerClass=None, libClass=None, unicodeDataClass=None, 
+    def __init__(self, font=None, layerClass=None, libClass=None, unicodeDataClass=None,
             guidelineClass=None, glyphClass=None,
             glyphContourClass=None, glyphPointClass=None, glyphComponentClass=None, glyphAnchorClass=None,
             glyphImageClass=None):
@@ -106,6 +116,7 @@ class LayerSet(BaseObject):
             raise ValueError("The default layer must not be None.")
         if layer == self._defaultLayer:
             return
+        self.postNotification(notification="LayerSet.DefaultLayerWillChange")
         oldName = None
         if self._defaultLayer is not None:
             oldName = self._defaultLayer.name
@@ -305,8 +316,9 @@ class LayerSet(BaseObject):
                 isDefaultLayer = layer == self.defaultLayer
                 glyphSet = writer.getGlyphSet(layerName=layerName, defaultLayer=isDefaultLayer)
                 layer.save(glyphSet, saveAs=saveAs, progressBar=progressBar)
-                if layer.lib or layer.color:
-                    glyphSet.writeLayerInfo(layer)
+                # this prevents us from saving when the color was deleted
+                #if layer.lib or layer.color:
+                glyphSet.writeLayerInfo(layer)
                 self._stampLayerInfoDataState(layer)
                 layer.dirty = False
                 if progressBar is not None:
@@ -448,6 +460,35 @@ class LayerSet(BaseObject):
             newDefaultLayerName = reader.getDefaultLayerName()
             self.defaultLayer = self[newDefaultLayerName]
 
+    # -----------------------------
+    # Serialization/Deserialization
+    # -----------------------------
+
+    def getDataForSerialization(self, **kwargs):
+        serialize = lambda item: item.getDataForSerialization()
+
+        def get_layers(k):
+            layers = []
+            for name in self.layerOrder:
+                layer = self[name]
+                isDefaultLayer = layer == self.defaultLayer
+                layers.append((name, serialize(layer), isDefaultLayer))
+            return layers
+
+        getters = [('layers', get_layers)]
+
+        return self._serialize(getters, **kwargs)
+
+    def setDataFromSerialization(self, data):
+        from functools import partial
+
+        if 'layers' not in data:
+            return
+        for name, data, isDefault in data['layers']:
+            layer = self.newLayer(name)
+            layer.setDataFromSerialization(data)
+            if isDefault:
+                self.defaultLayer = layer
 
 class _StaticLayerInfoMaker(object):
 
@@ -456,7 +497,7 @@ class _StaticLayerInfoMaker(object):
         self.color = None
 
     def pack(self):
-        from plistlib import writePlistToString
+        from ufoLib.plistlib import writePlistToString
         data = {}
         if self.lib:
             data["lib"] = self.lib
@@ -662,7 +703,7 @@ def _testExternalChanges():
     """
     >>> import os
     >>> import shutil
-    >>> from plistlib import readPlist, writePlist
+    >>> from ufoLib.plistlib import readPlist, writePlist
     >>> from defcon import Font
     >>> from defcon.test.testTools import getTestFontPath, makeTestFontCopy, tearDownTestFontCopy
 
@@ -753,7 +794,7 @@ def _testReloadLayers():
     """
     >>> import os
     >>> import shutil
-    >>> from plistlib import readPlist, writePlist
+    >>> from ufoLib.plistlib import readPlist, writePlist
     >>> from defcon import Font
     >>> from defcon.test.testTools import getTestFontPath, makeTestFontCopy, tearDownTestFontCopy
 

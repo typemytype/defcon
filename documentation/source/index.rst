@@ -34,6 +34,7 @@ Objects
    :maxdepth: 1
 
    objects/font
+   objects/layer
    objects/glyph
    objects/contour
    objects/component
@@ -47,13 +48,15 @@ Objects
    objects/unicodedata
    objects/notificationcenter
    objects/base
+   objects/layerSet
 
 
 Dependencies
 ^^^^^^^^^^^^
 
-* `FontTools <http://fonttools.sf.net>`_
+* `FontTools <https://github.com/behdad/fonttools>`_
 * `RoboFab <http://robofab.com>`_
+* `ufoLib <https://github.com/unified-font-object/ufoLib>`_
 
 
 Indices and tables

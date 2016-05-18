@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import weakref
 from warnings import warn
 from fontTools.misc import bezierTools
@@ -5,6 +6,7 @@ from defcon.objects.base import BaseObject
 from defcon.tools import bezierMath
 from defcon.tools.representations import contourBoundsRepresentationFactory,\
     contourControlPointBoundsRepresentationFactory, contourClockwiseRepresentationFactory
+from defcon.tools.identifiers import makeRandomIdentifier
 
 
 class Contour(BaseObject):
@@ -66,10 +68,11 @@ class Contour(BaseObject):
         self.beginSelfNotificationObservation()
         self._points = []
         if pointClass is None:
-            from point import Point
+            from .point import Point
             pointClass = Point
         self._pointClass = pointClass
         self._identifier = None
+        self._dirty = False
 
     def __del__(self):
         super(Contour, self).__del__()
@@ -223,17 +226,10 @@ class Contour(BaseObject):
         return len(self._points)
 
     def __getitem__(self, index):
-        if index > len(self._points):
-            raise IndexError
-        return self._points[index]
+        return self._points.__getitem__(index)
 
     def __iter__(self):
-        pointCount = len(self)
-        index = 0
-        while index < pointCount:
-            point = self[index]
-            yield point
-            index += 1
+        return iter(self._points)
 
     def clear(self):
         """
@@ -267,7 +263,7 @@ class Contour(BaseObject):
         This will post *Contour.WindingDirectionChanged*,
         *Contour.PointsChanged* and *Contour.Changed* notifications.
         """
-        from robofab.pens.reverseContourPointPen import ReverseContourPointPen
+        from defcon.pens.reverseContourPointPen import ReverseContourPointPen
         oldDirection = self.clockwise
         # put the current points in another contour
         otherContour = self.__class__(glyph=None, pointClass=self.pointClass)
@@ -303,11 +299,9 @@ class Contour(BaseObject):
         if len(segments[-1]) == 0:
             del segments[-1]
         if lastWasOffCurve:
-            segment = segments.pop(-1)
-            assert len(segments[0]) == 1
-            segment.append(segments[0][0])
-            del segments[0]
-            segments.append(segment)
+            lastSegment = segments[-1]
+            segment = segments.pop(0)
+            lastSegment.extend(segment)
         elif segments[0][-1].segmentType != "move":
             segment = segments.pop(0)
             segments.append(segment)
@@ -441,12 +435,13 @@ class Contour(BaseObject):
     # Move
     # ----
 
-    def move(self, (x, y)):
+    def move(self, values):
         """
         Move all points in the contour by **(x, y)**.
 
         This will post *Contour.PointsChanged* and *Contour.Changed* notifications.
         """
+        (x, y) = values
         for point in self._points:
             point.move((x, y))
         # update the representations
@@ -483,11 +478,12 @@ class Contour(BaseObject):
     # Point Inside
     # ------------
 
-    def pointInside(self, (x, y), evenOdd=False):
+    def pointInside(self, coordinates, evenOdd=False):
         """
         Returns a boolean indicating if **(x, y)** is in the
         "black" area of the contour.
         """
+        (x, y) = coordinates
         from fontTools.pens.pointInsidePen import PointInsidePen
         pen = PointInsidePen(glyphSet=None, testPoint=(x, y), evenOdd=evenOdd)
         self.draw(pen)
@@ -558,12 +554,12 @@ class Contour(BaseObject):
     # Pen methods
     # -----------
 
-    def beginPath(self):
+    def beginPath(self, identifier=None):
         """
         Standard point pen *beginPath* method.
         This should not be used externally.
         """
-        pass
+        self.identifier = identifier
 
     def endPath(self):
         """
@@ -572,11 +568,12 @@ class Contour(BaseObject):
         """
         pass
 
-    def addPoint(self, (x, y), segmentType=None, smooth=False, name=None, identifier=None, **kwargs):
+    def addPoint(self, values, segmentType=None, smooth=False, name=None, identifier=None, **kwargs):
         """
         Standard point pen *addPoint* method.
         This should not be used externally.
         """
+        (x, y) = values
         point = self._pointClass((x, y), segmentType=segmentType, smooth=smooth, name=name, identifier=identifier)
         self.insertPoint(len(self._points), point)
 
@@ -584,7 +581,7 @@ class Contour(BaseObject):
         """
         Draw the contour with **pen**.
         """
-        from robofab.pens.adapterPens import PointToSegmentPen
+        from ufoLib.pointPen import PointToSegmentPen
         pointPen = PointToSegmentPen(pen)
         self.drawPoints(pointPen)
 
@@ -671,6 +668,93 @@ class Contour(BaseObject):
         self._layer = None
         self._glyph = None
 
+    # -----------------------------
+    # Serialization/Deserialization
+    # -----------------------------
+
+    def getDataForSerialization(self, **kwargs):
+        def get_points(key):
+            # store the point pen protocol calls
+            # this will store the identifier and the point data
+            pointData = []
+            self.drawPoints(Recorder(pointData))
+            return pointData
+
+        getters = [('pen', get_points)]
+        return self._serialize(getters, **kwargs)
+
+    def setDataFromSerialization(self, data):
+        self.clear()
+        self.identifier = None
+        if 'pen' in data:
+            # play back
+            Recorder(data['pen'])(self)
+
+
+class Recorder(object):
+    """
+        Records all method calls it receives in a list of tuples in the form of
+        [(:str:command, :list:args, :dict: kwargd)]
+
+        Method calls to be recorded must not start with an underscore.
+
+        This class creates a callable object which can be used like a
+        function: "recorder(target)" because that way calls to all methods
+        that don't start with underscores can be recorded.
+
+        This is useful to record the commands of both pen protocols
+        and it may become useful for other things as well, like recording
+        undo commands.
+
+        Example Session PointPen:
+
+        data_glyphA = []
+        recorderPointPen = Recorder(data_glyphA)
+        glyphA.drawPoints(recorderPointPen)
+
+        # The point data of the glyph is now stored within data
+        # we can either replay it immediately or take it away and use it
+        # to replay it later
+
+        stored_data = pickle.dumps(data_glyphA)
+        restored_data_glyphA = pickle.loads(stored_data)
+
+        player = Recorder(restored_data_glyphA)
+        # The recorder behaves like glyphA.drawPoints
+        player(glyphB)
+
+
+        Example Session SegmentPen:
+
+        data_glyphA = []
+        recorderPen = Recorder(data_glyphA)
+        glyphA.draw(recorderPen)
+
+        # reuse it immediately
+        # The recorder behaves like glyphA.draw
+        recorderPen(glyphB)
+    """
+    def __init__(self, data=None):
+        self.__dict__['_data'] = data if data is not None else []
+
+    def __call__(self, target):
+        """ Replay all methof calls this Recorder to target.
+            Public Method(!)
+        """
+        for cmd, args, kwds in self._data:
+            getattr(target, cmd)(*args, **kwds)
+
+    def __setattr__(self, name, value):
+        raise AttributeError('It\'s not allowed to set attributes here.', name)
+
+    def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
+        def command(*args, **kwds):
+            self._data.append((name, args, kwds))
+        # cache the method, don't use __setattr__
+        self.__dict__[name] = command
+        return command
 
 # -----
 # Tests
@@ -789,7 +873,7 @@ def _testOnCurvePoints():
     4
     >>> [(point.x, point.y) for point in contour.onCurvePoints]
     [(0, 0), (700, 0), (700, 700), (0, 700)]
-    
+
     >>> glyph = font['B']
     >>> contour = glyph[0]
     >>> len(contour.onCurvePoints)
@@ -951,7 +1035,7 @@ def _testSplitAndInsertPointAtSegmentAndT():
 
 def _testRemoveSegment():
     """
-    >>> print "need removeSegment tests!"
+    >>> "need removeSegment tests!"
     """
 
 
