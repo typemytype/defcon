@@ -443,6 +443,7 @@ class Component(BaseObject):
             setter(key, data[key])
 
 
+<<<<<<< HEAD
 def _testIdentifier():
     """
     >>> from defcon import Glyph
@@ -491,6 +492,8 @@ def _testIdentifier():
 
 >>>>>>> typesupply/master
 
+=======
+>>>>>>> typesupply/ufo3
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

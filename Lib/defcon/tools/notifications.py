@@ -495,6 +495,7 @@ class Notification(object):
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 class ObserverDict(dict):
 
@@ -957,6 +958,8 @@ def _testAreNotificationsDisabled():
     False
     """
 
+=======
+>>>>>>> typesupply/ufo3
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

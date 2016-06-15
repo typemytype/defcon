@@ -256,6 +256,7 @@ class Anchor(BaseDictObject):
         self._glyph = None
 
 
+<<<<<<< HEAD
 def _test():
     """
     >>> a = Anchor()
@@ -324,6 +325,8 @@ def _test():
 
 >>>>>>> typesupply/master
 
+=======
+>>>>>>> typesupply/ufo3
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
