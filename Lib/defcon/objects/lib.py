@@ -50,6 +50,7 @@ class Lib(BaseDictObject):
     endUndoNotificationName = "Lib.EndUndo"
     beginRedoNotificationName = "Lib.BeginRedo"
     endRedoNotificationName = "Lib.EndRedo"
+<<<<<<< HEAD
     setItemNotificationName = "Lib.ItemSet"
     deleteItemNotificationName = "Lib.ItemDeleted"
     clearNotificationName = "Lib.Cleared"
@@ -166,6 +167,8 @@ class Lib(BaseDictObject):
         self._layerSet = None
         self._layer = None
         self._glyph = None
+=======
+>>>>>>> typesupply/master
 
 
 if __name__ == "__main__":

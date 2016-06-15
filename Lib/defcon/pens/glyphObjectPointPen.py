@@ -7,6 +7,7 @@ class GlyphObjectPointPen(AbstractPointPen):
         self._contour = None
         self.skipConflictingIdentifiers = False
 
+<<<<<<< HEAD
     def beginPath(self, identifier=None, **kwargs):
         self._contour = self._glyph.instantiateContour()
         self._contour.disableNotifications()
@@ -20,6 +21,22 @@ class GlyphObjectPointPen(AbstractPointPen):
         self._contour.dirty = False
         self._glyph.appendContour(self._contour)
         self._contour.enableNotifications()
+=======
+    def beginPath(self):
+        self._contour = self._glyph.contourClass(pointClass=self._glyph.pointClass)
+
+    def endPath(self):
+        if len(self._contour) == 1 and self._contour[0].name is not None:
+            point = self._contour[0]
+            anchor = self._glyph.anchorClass()
+            anchor.x = point.x
+            anchor.y = point.y
+            anchor.name = point.name
+            self._glyph.appendAnchor(anchor)
+        else:
+            self._contour.dirty = False
+            self._glyph.appendContour(self._contour)
+>>>>>>> typesupply/master
         self._contour = None
 
     def addPoint(self, pt, segmentType=None, smooth=False, name=None, identifier=None, **kwargs):

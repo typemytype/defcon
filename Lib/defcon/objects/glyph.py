@@ -83,6 +83,7 @@ class Glyph(BaseObject):
     endUndoNotificationName = "Glyph.EndUndo"
     beginRedoNotificationName = "Glyph.BeginRedo"
     endRedoNotificationName = "Glyph.EndRedo"
+<<<<<<< HEAD
     representationFactories = {
         "defcon.glyph.bounds" : dict(
             factory=glyphBoundsRepresentationFactory,
@@ -105,6 +106,10 @@ class Glyph(BaseObject):
         self._font = font
         self._layerSet = layerSet
         self._layer = layer
+=======
+
+    def __init__(self, contourClass=None, pointClass=None, componentClass=None, anchorClass=None, libClass=None):
+>>>>>>> typesupply/master
         super(Glyph, self).__init__()
         self.beginSelfNotificationObservation()
 
@@ -127,6 +132,10 @@ class Glyph(BaseObject):
         if contourClass is None:
             contourClass = Contour
         if pointClass is None:
+<<<<<<< HEAD
+=======
+            from point import Point
+>>>>>>> typesupply/master
             pointClass = Point
         if componentClass is None:
             componentClass = Component
@@ -159,8 +168,26 @@ class Glyph(BaseObject):
     # Parent Objects
     # --------------
 
+<<<<<<< HEAD
     def getParent(self):
         return self.font
+=======
+    def __del__(self):
+        self.destroyAllRepresentations()
+
+    def _set_dispatcher(self, dispatcher):
+        super(Glyph, self)._set_dispatcher(dispatcher)
+        if dispatcher is not None:
+            for contour in self._contours:
+                self._setParentDataInContour(contour)
+            for component in self._components:
+                self._setParentDataInComponent(component)
+            for anchor in self._anchors:
+                self._setParentDataInAnchor(anchor)
+            self._lib.dispatcher = dispatcher
+            self._lib.addObserver(observer=self, methodName="_libContentChanged", notification="Lib.Changed")
+            self.addObserver(observer=self, methodName="destroyAllRepresentations", notification="Glyph.Changed")
+>>>>>>> typesupply/master
 
     def _get_font(self):
         if self._font is None:
@@ -183,9 +210,19 @@ class Glyph(BaseObject):
 
     layer = property(_get_layer, doc="The :class:`Layer` that this glyph belongs to.")
 
+<<<<<<< HEAD
     # ----------------
     # Basic Attributes
     # ----------------
+=======
+    def _get_pointClass(self):
+        return self._pointClass
+
+    pointClass = property(_get_pointClass, doc="The class used for points.")
+
+    def _get_componentClass(self):
+        return self._componentClass
+>>>>>>> typesupply/master
 
     # identifiers
 
@@ -834,6 +871,7 @@ class Glyph(BaseObject):
 
         This will post a *Glyph.Changed* notification.
         """
+<<<<<<< HEAD
         assert guideline not in self.guidelines
         if not isinstance(guideline, self._guidelineClass):
             guideline = self.instantiateGuideline(guidelineDict=guideline)
@@ -852,6 +890,13 @@ class Glyph(BaseObject):
         self._guidelines.insert(index, guideline)
         self.postNotification(notification="Glyph.GuidelinesChanged")
         self.dirty = True
+=======
+        self.holdNotifications()
+        self.clearContours()
+        self.clearComponents()
+        self.clearAnchors()
+        self.releaseHeldNotifications()
+>>>>>>> typesupply/master
 
     def removeGuideline(self, guideline):
         """
@@ -859,6 +904,7 @@ class Glyph(BaseObject):
 
         This will post a *Glyph.Changed* notification.
         """
+<<<<<<< HEAD
         self.postNotification(notification="Glyph.GuidelineWillBeDeleted", data=dict(object=guideline))
         if guideline.identifier is not None:
             self._identifiers.remove(guideline.identifier)
@@ -866,6 +912,12 @@ class Glyph(BaseObject):
         self.endSelfGuidelineNotificationObservation(guideline)
         self.postNotification(notification="Glyph.GuidelinesChanged")
         self.dirty = True
+=======
+        self.holdNotifications()
+        for contour in reversed(self._contours):
+            self.removeContour(contour)
+        self.releaseHeldNotifications()
+>>>>>>> typesupply/master
 
     def guidelineIndex(self, guideline):
         """
@@ -880,6 +932,7 @@ class Glyph(BaseObject):
         This posts a *Glyph.Changed* notification.
         """
         self.holdNotifications()
+<<<<<<< HEAD
         for guideline in reversed(self._guidelines):
             self.removeGuideline(guideline)
         self.releaseHeldNotifications()
@@ -899,6 +952,11 @@ class Glyph(BaseObject):
             self._note = value
             self.postNotification(notification="Glyph.NoteChanged", data=dict(oldValue=oldValue, newValue=value))
             self.dirty = True
+=======
+        for component in reversed(self._components):
+            self.removeComponent(component)
+        self.releaseHeldNotifications()
+>>>>>>> typesupply/master
 
     note = property(_get_note, _set_note, doc="An arbitrary note for the glyph. Setting this will post a *Glyph.Changed* notification.")
 
@@ -1068,10 +1126,15 @@ class Glyph(BaseObject):
         This posts a *Glyph.Changed* notification.
         """
         self.holdNotifications()
+<<<<<<< HEAD
         self.clearContours()
         self.clearComponents()
         self.clearAnchors()
         self.clearGuidelines()
+=======
+        for anchor in reversed(self._anchors):
+            self.removeAnchor(anchor)
+>>>>>>> typesupply/master
         self.releaseHeldNotifications()
 
     # ----
@@ -1147,9 +1210,48 @@ class Glyph(BaseObject):
         self.postNotification(notification="Glyph.ComponentsChanged")
         self.dirty = True
 
+<<<<<<< HEAD
     def _componentBaseGlyphDataChanged(self, notification):
         self.postNotification(notification="Glyph.ComponentsChanged")
         self.postNotification(notification=self.changeNotificationName)
+=======
+    def getDataToSerializeForUndo(self):
+        data = dict(
+            contours=[contour.serializeForUndo(pack=False) for contour in self._contours],
+            components=[component.serializeForUndo(pack=False) for component in self._components],
+            anchors=[anchor.serializeForUndo(pack=False) for anchor in self._anchors],
+            name=self.name,
+            unicodes=self.unicodes,
+            width=self.width,
+            lib=self.lib.serializeForUndo(pack=False)
+        )
+        return data
+
+    def loadDeserializedDataFromUndo(self, data):
+        # clear contours, components, anchors
+        self.clear()
+        # contours
+        for contourData in data["contours"]:
+            contour = self.contourClass(pointClass=self.pointClass)
+            contour.deserializeFromUndo(contourData)
+            self.appendContour(contour)
+        # components
+        for componentData in data["components"]:
+            component = self.componentClass()
+            component.deserializeFromUndo(componentData)
+            self.appendComponent(component)
+        # anchors
+        for anchorData in data["anchors"]:
+            anchor = self.anchorClass()
+            anchor.deserializeFromUndo(anchorData)
+            self.appendAnchor(anchor)
+        # basic attributes
+        self.name = data["name"]
+        self.unicodes = data["unicodes"]
+        self.width = data["width"]
+        # lib
+        self.lib.deserializeFromUndo(data["lib"])
+>>>>>>> typesupply/master
 
     def _anchorChanged(self, notification):
         self.postNotification(notification="Glyph.AnchorsChanged")

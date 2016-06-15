@@ -43,6 +43,7 @@ class Contour(BaseObject):
     """
 
     changeNotificationName = "Contour.Changed"
+<<<<<<< HEAD
     representationFactories = {
         "defcon.contour.bounds" : dict(
             factory=contourBoundsRepresentationFactory,
@@ -64,9 +65,14 @@ class Contour(BaseObject):
         self._layer = None
         self._glyph = None
         self.glyph = glyph
+=======
+
+    def __init__(self, pointClass=None):
+>>>>>>> typesupply/master
         super(Contour, self).__init__()
         self.beginSelfNotificationObservation()
         self._points = []
+<<<<<<< HEAD
         if pointClass is None:
             from .point import Point
             pointClass = Point
@@ -124,6 +130,33 @@ class Contour(BaseObject):
         else:
             layer = self._layer()
         return layer
+=======
+        self._boundsCache = None
+        self._controlPointBoundsCache = None
+        self._clockwiseCache = None
+        if pointClass is None:
+            from point import Point
+            pointClass = Point
+        self._pointClass = pointClass
+
+    def _destroyBoundsCache(self):
+        self._boundsCache = None
+        self._controlPointBoundsCache = None
+
+    # ----------
+    # Attributes
+    # ----------
+
+    def _get_bounds(self):
+        from robofab.pens.boundsPen import BoundsPen
+        if self._boundsCache is None:
+            pen = BoundsPen(None)
+            self.draw(pen)
+            self._boundsCache = pen.bounds
+        return self._boundsCache
+
+    bounds = property(_get_bounds, doc="The bounds of the contour's outline expressed as a tuple of form (xMin, yMin, xMax, yMax).")
+>>>>>>> typesupply/master
 
     layer = property(_get_layer, doc="The :class:`Layer` that this contour belongs to.")
 
@@ -157,7 +190,73 @@ class Contour(BaseObject):
 
     onCurvePoints = property(_get_onCurvePoints, doc="A list of all on curve points in the contour.")
 
+<<<<<<< HEAD
     def appendPoint(self, point):
+=======
+    def _get_segments(self):
+        if not len(self._points):
+            return []
+        segments = [[]]
+        lastWasOffCurve = False
+        for point in self._points:
+            segments[-1].append(point)
+            if point.segmentType is not None:
+                segments.append([])
+            lastWasOffCurve = point.segmentType is None
+        if len(segments[-1]) == 0:
+            del segments[-1]
+        if lastWasOffCurve:
+            segment = segments.pop(-1)
+            assert len(segments[0]) == 1
+            segment.append(segments[0][0])
+            del segments[0]
+            segments.append(segment)
+        elif segments[0][-1].segmentType != "move":
+            segment = segments.pop(0)
+            segments.append(segment)
+        return segments
+
+    segments = property(_get_segments, doc="A list of all points in the contour organized into segments.")
+
+    # -------
+    # Methods
+    # -------
+
+    def __len__(self):
+        return len(self._points)
+
+    def __getitem__(self, index):
+        if index > len(self._points):
+            raise IndexError
+        return self._points[index]
+
+    def __iter__(self):
+        pointCount = len(self)
+        index = 0
+        while index < pointCount:
+            point = self[index]
+            yield point
+            index += 1
+
+    def clear(self):
+        """
+        Clear the contents of the contour.
+
+        This posts a *Contour.Changed* notification.
+        """
+        self._clear()
+
+    def _clear(self, postNotification=True):
+        # clear the internal storage
+        self._points = []
+        # reset the clockwise cache
+        self._clockwiseCache = None
+        # post a dirty notification
+        if postNotification:
+            self.dirty = True
+
+    def reverse(self):
+>>>>>>> typesupply/master
         """
         Append **point** to the glyph. The point must be a defcon
         :class:`Point` object or a subclass of that object. An error
@@ -166,8 +265,25 @@ class Contour(BaseObject):
 
         This will post *Contour.PointsChanged* and *Contour.Changed* notifications.
         """
+<<<<<<< HEAD
         assert point not in self._points
         self.insertPoint(len(self._points), point)
+=======
+        from robofab.pens.reverseContourPointPen import ReverseContourPointPen
+        # put the current points in another contour
+        otherContour = self.__class__(self._pointClass)
+        # draw the points in this contour through
+        # the reversing pen.
+        reversePen = ReverseContourPointPen(otherContour)
+        self.drawPoints(reversePen)
+        # clear the points in this contour
+        # and copy the points from the other
+        # contour to this contour.
+        self._clear(postNotification=False)
+        self._points = list(otherContour._points)
+        # post a notification
+        self.dirty = True
+>>>>>>> typesupply/master
 
     def insertPoint(self, index, point):
         """
@@ -260,6 +376,7 @@ class Contour(BaseObject):
         that the actual points stored in this object will be completely
         repalced by new points.
 
+<<<<<<< HEAD
         This will post *Contour.WindingDirectionChanged*,
         *Contour.PointsChanged* and *Contour.Changed* notifications.
         """
@@ -308,6 +425,47 @@ class Contour(BaseObject):
         return segments
 
     segments = property(_get_segments, doc="A list of all points in the contour organized into segments.")
+=======
+    def _splitAndInsertAtSegmentAndT(self, segmentIndex, t, insert):
+        segments = self.segments
+        segment = segments[segmentIndex]
+        segment.insert(0, segments[segmentIndex-1][-1])
+        firstPoint = segment[0]
+        lastPoint = segment[-1]
+        segmentType = lastPoint.segmentType
+        segment = [(point.x, point.y) for point in segment]
+        if segmentType == "line":
+            (x1, y1), (x2, y2) = segment
+            x = x1 + (x2 - x1) * t
+            y = y1 + (y2 - y1) * t
+            pointsToInsert = [((x, y), "line", False)]
+            insertionPoint =  (x, y)
+            pointWillBeSmooth = False
+        elif segmentType == "curve":
+            pt1, pt2, pt3, pt4 = segment
+            (pt1, pt2, pt3, pt4), (pt5, pt6, pt7, pt8) = bezierTools.splitCubicAtT(pt1, pt2, pt3, pt4, t)
+            pointsToInsert = [(pt2, None, False), (pt3, None, False), (pt4, "curve", True), (pt6, None, False), (pt7, None, False)]
+            insertionPoint = tuple(pt4)
+            pointWillBeSmooth = True
+        else:
+            # XXX could be a quad. in that case, we could handle it.
+            raise NotImplementedError("unknown segment type: %s" % segmentType)
+        if insert:
+            firstPointIndex = self._points.index(firstPoint)
+            lastPointIndex = self._points.index(lastPoint)
+            firstPoints = self._points[:firstPointIndex + 1]
+            if firstPointIndex == len(self._points) - 1:
+                firstPoints = firstPoints[lastPointIndex:]
+                lastPoints = []
+            elif lastPointIndex == 0:
+                lastPoints = []
+            else:
+                lastPoints = self._points[lastPointIndex:]
+            newPoints = [self._pointClass(pos, segmentType=segmentType, smooth=smooth) for pos, segmentType, smooth in pointsToInsert]
+            self._points = firstPoints + newPoints + lastPoints
+            self.dirty = True
+        return insertionPoint, pointWillBeSmooth
+>>>>>>> typesupply/master
 
     def removeSegment(self, segmentIndex, preserveCurve=False):
         """
@@ -573,9 +731,20 @@ class Contour(BaseObject):
         Standard point pen *addPoint* method.
         This should not be used externally.
         """
+<<<<<<< HEAD
         (x, y) = values
         point = self._pointClass((x, y), segmentType=segmentType, smooth=smooth, name=name, identifier=identifier)
         self.insertPoint(len(self._points), point)
+=======
+        point = self._pointClass((x, y), segmentType=segmentType, smooth=smooth, name=name)
+        self._addPoint(point)
+
+    def _addPoint(self, point):
+        self._points.append(point)
+        self._destroyBoundsCache()
+        self._clockwiseCache = None
+        self.dirty = True
+>>>>>>> typesupply/master
 
     def draw(self, pen):
         """
@@ -602,6 +771,7 @@ class Contour(BaseObject):
                 warn("The addPoint method needs an identifier kwarg. The point's identifier value has been discarded.", DeprecationWarning)
         pointPen.endPath()
 
+<<<<<<< HEAD
     # ----------
     # Identifier
     # ----------
@@ -755,6 +925,24 @@ class Recorder(object):
         # cache the method, don't use __setattr__
         self.__dict__[name] = command
         return command
+=======
+    # ----
+    # Undo
+    # ----
+
+    def getDataToSerializeForUndo(self):
+        data = dict(
+            points=[point.getDataToSerializeForUndo() for point in self._points]
+        )
+        return data
+
+    def loadDeserializedDataFromUndo(self, data):
+        for pointData in data["points"]:
+            point = self._pointClass((0, 0))
+            point.loadDeserializedDataFromUndo(pointData)
+            self._addPoint(point)
+
+>>>>>>> typesupply/master
 
 # -----
 # Tests

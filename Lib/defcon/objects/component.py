@@ -1,12 +1,16 @@
+<<<<<<< HEAD
 from __future__ import absolute_import
 import weakref
 from warnings import warn
+=======
+>>>>>>> typesupply/master
 from fontTools.misc.transform import Transform
 from defcon.objects.base import BaseObject
 from defcon.tools.identifiers import makeRandomIdentifier
 
 _defaultTransformation = (1, 0, 0, 1, 0, 0)
 
+_defaultTransformation = (1, 0, 0, 1, 0, 0)
 
 class Component(BaseObject):
 
@@ -27,6 +31,7 @@ class Component(BaseObject):
     """
 
     changeNotificationName = "Component.Changed"
+<<<<<<< HEAD
     representationFactories = {}
 
     def __init__(self, glyph=None):
@@ -35,19 +40,25 @@ class Component(BaseObject):
         self._layer = None
         self._glyph = None
         self.glyph = glyph
+=======
+>>>>>>> typesupply/master
 
         self._dirty = False
         self._baseGlyph = None
         self._transformation = tuple(_defaultTransformation)
+<<<<<<< HEAD
         self._identifier = None
 
         super(Component, self).__init__()
         self.beginSelfNotificationObservation()
+=======
+>>>>>>> typesupply/master
 
     # ----------
     # Attributes
     # ----------
 
+<<<<<<< HEAD
     # parents
 
     def getParent(self):
@@ -120,6 +131,18 @@ class Component(BaseObject):
         if self.baseGlyph not in layer:
             return None
         glyph = layer[self.baseGlyph]
+=======
+    def _getBounds(self, boundsAttr):
+        glyph = self.getParent()
+        if glyph is None:
+            return None
+        font = glyph.getParent()
+        if font is None:
+            return None
+        if self.baseGlyph not in font:
+            return None
+        glyph = font[self.baseGlyph]
+>>>>>>> typesupply/master
         bounds = getattr(glyph, boundsAttr)
         if bounds is None:
             return None
@@ -233,6 +256,7 @@ class Component(BaseObject):
         self.draw(pen)
         return pen.getResult()
 
+<<<<<<< HEAD
     # ----------
     # Identifier
     # ----------
@@ -449,6 +473,23 @@ def _testIdentifier():
     >>> list(sorted(glyph.identifiers))
     ['component 1']
     """
+=======
+    # ----
+    # Undo
+    # ----
+
+    def getDataToSerializeForUndo(self):
+        data = dict(
+            baseGlyph=self.baseGlyph,
+            transformation=self.transformation
+        )
+        return data
+
+    def loadDeserializedDataFromUndo(self, data):
+        self.baseGlyph = data["baseGlyph"]
+        self.transformation = data["transformation"]
+
+>>>>>>> typesupply/master
 
 if __name__ == "__main__":
     import doctest

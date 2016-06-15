@@ -1,11 +1,17 @@
+<<<<<<< HEAD
 from __future__ import print_function
 from collections import OrderedDict
+=======
+>>>>>>> typesupply/master
 """
 A flexible and relatively robust implementation
 of the Observer Pattern.
 """
 
+<<<<<<< HEAD
 import sys
+=======
+>>>>>>> typesupply/master
 import weakref
 
 """
@@ -17,7 +23,11 @@ Internal Documentation
 Storage Structures:
 
 registry : {
+<<<<<<< HEAD
         (notification, observable) : OrderedDict(
+=======
+        (notification, observable) : ObserverDict(
+>>>>>>> typesupply/master
             observer : method name
         )
     }
@@ -76,7 +86,11 @@ class NotificationCenter(object):
         observer = weakref.ref(observer)
         key = (notification, observable)
         if key not in self._registry:
+<<<<<<< HEAD
             self._registry[key] = OrderedDict()
+=======
+            self._registry[key] = ObserverDict()
+>>>>>>> typesupply/master
         assert observer not in self._registry[key], "An observer is only allowed to have one callback for a given notification + observable combination."
         self._registry[key][observer] = methodName
 
@@ -153,7 +167,11 @@ class NotificationCenter(object):
         for key in registryPossibilities:
             if key not in self._registry:
                 continue
+<<<<<<< HEAD
             for observerRef, methodName in list(self._registry[key].items()):
+=======
+            for observerRef, methodName in self._registry[key].items():
+>>>>>>> typesupply/master
                 # observer specific hold/disabled
                 # -------------------------------
                 if self._holds or self._disabled:
@@ -202,6 +220,7 @@ class NotificationCenter(object):
     # ----
 
     def holdNotifications(self, observable=None, notification=None, observer=None):
+<<<<<<< HEAD
         """
         Hold all notifications posted to all objects observing
         **notification** in **observable**.
@@ -239,12 +258,119 @@ class NotificationCenter(object):
         * **observable** The object that the notification belongs to. This is optional.
         * **notification** The name of the notification. This is optional.
         * **observer** The observer. This is optional.
+=======
+        """
+        Hold all notifications posted to all objects observing
+        **notification** in **observable**.
+
+        * **observable** The object that the notification belongs to. This is optional.
+          If no *observable* is given, *all* *notifications* will be held.
+        * **notification** The name of the notification. This is optional.
+          If no *notification* is given, *all* notifications for *observable*
+          will be held.
+         * **observer** The specific observer to not hold notifications for.
+           If no *observer* is given, the appropriate notifications will be
+           held for all observers.
+
+        Held notifications will be posted after the matching *notification*
+        and *observable* have been passed to :meth:`Notification.releaseHeldNotifications`.
+        This object will retain a count of how many times it has been told to
+        hold notifications for *notification* and *observable*. It will not
+        post the notifications until the *notification* and *observable*
+        have been released the same number of times.
+>>>>>>> typesupply/master
         """
         if observable is not None:
             observable = weakref.ref(observable)
         if observer is not None:
             observer = weakref.ref(observer)
         key = (notification, observable, observer)
+<<<<<<< HEAD
+        self._holds[key]["count"] -= 1
+        if self._holds[key]["count"] == 0:
+            notifications = self._holds[key]["notifications"]
+            del self._holds[key]
+            for notification, observableRef, data in notifications:
+                self.postNotification(notification, observableRef(), data)
+
+    def areNotificationsHeld(self, observable=None, notification=None, observer=None):
+        """
+        Returns a boolean indicating if notifications posted to all objects observing
+        **notification** in **observable** are being held.
+=======
+        if key not in self._holds:
+            self._holds[key] = dict(count=0, notifications=[])
+        self._holds[key]["count"] += 1
+
+    def releaseHeldNotifications(self, observable=None, notification=None, observer=None):
+        """
+        Release all held notifications posted to all objects observing
+        **notification** in **observable**.
+>>>>>>> typesupply/master
+
+        * **observable** The object that the notification belongs to. This is optional.
+        * **notification** The name of the notification. This is optional.
+        * **observer** The observer. This is optional.
+        """
+        if observable is not None:
+            observable = weakref.ref(observable)
+        if observer is not None:
+            observer = weakref.ref(observer)
+        key = (notification, observable, observer)
+<<<<<<< HEAD
+        return key in self._holds
+
+    # -------
+    # Disable
+    # -------
+
+    def disableNotifications(self, observable=None, notification=None, observer=None):
+        """
+        Disable all posts of **notification** from **observable** posted
+        to **observer** observing.
+
+        * **observable** The object that the notification belongs to. This is optional.
+          If no *observable* is given, *all* *notifications* will be disabled for *observer*.
+        * **notification** The name of the notification. This is optional.
+          If no *notification* is given, *all* notifications for *observable*
+          will be disabled for *observer*.
+        * **observer** The specific observer to not send posts to. If no
+          *observer* is given, the appropriate notifications will not
+          be posted to any observers.
+
+        This object will retain a count of how many times it has been told to
+        disable notifications for *notification* and *observable*. It will not
+        enable new notifications until the *notification* and *observable*
+        have been released the same number of times.
+        """
+        if observable is not None:
+            observable = weakref.ref(observable)
+        if observer is not None:
+            observer = weakref.ref(observer)
+        key = (notification, observable, observer)
+        if key not in self._disabled:
+            self._disabled[key] = 0
+        self._disabled[key] += 1
+
+    def enableNotifications(self, observable=None, notification=None, observer=None):
+        """
+        Enable notifications posted to all objects observing
+        **notification** in **observable**.
+
+        * **observable** The object that the notification belongs to. This is optional.
+        * **notification** The name of the notification. This is optional.
+        * **observer** The observer. This is optional.
+        """
+        if observable is not None:
+            observable = weakref.ref(observable)
+        if observer is not None:
+            observer = weakref.ref(observer)
+        key = (notification, observable, observer)
+        self._disabled[key] -= 1
+        if self._disabled[key] == 0:
+            del self._disabled[key]
+
+=======
         self._holds[key]["count"] -= 1
         if self._holds[key]["count"] == 0:
             notifications = self._holds[key]["notifications"]
@@ -318,6 +444,7 @@ class NotificationCenter(object):
         if self._disabled[key] == 0:
             del self._disabled[key]
 
+>>>>>>> typesupply/master
     def areNotificationsDisabled(self, observable=None, notification=None, observer=None):
         """
         Returns a boolean indicating if notifications posted to all objects observing
@@ -367,6 +494,53 @@ class Notification(object):
     data = property(_get_data, doc="Arbitrary data passed along with the notification. There is no set format for this data and there is not requirement that any data be present. Refer to the documentation for methods that are responsible for generating notifications for information about this data.")
 
 
+<<<<<<< HEAD
+=======
+class ObserverDict(dict):
+
+    """An object for storing ordered observers."""
+
+    def __init__(self):
+        super(ObserverDict, self).__init__()
+        self._order = []
+
+    def keys(self):
+        return list(self._order)
+
+    def values(self):
+        return [self[key] for key in self]
+
+    def items(self):
+        return [(key, self[key]) for key in self]
+
+    def __iter__(self):
+        order = self._order
+        while order:
+            yield order[0]
+            order = order[1:]
+
+    def iterkeys(self):
+        return iter(self)
+
+    def itervalues(self):
+        for key in self:
+            yield self[key]
+
+    def iteritems(self):
+        for key in self:
+            yield (key, self[key])
+
+    def __delitem__(self, key):
+        super(ObserverDict, self).__delitem__(key)
+        self._order.remove(key)
+
+    def __setitem__(self, key, value):
+        if key in self:
+            del self[key]
+        super(ObserverDict, self).__setitem__(key, value)
+        self._order.append(key)
+
+>>>>>>> typesupply/master
 # -----
 # Tests
 # -----
@@ -374,7 +548,11 @@ class Notification(object):
 class _TestObserver(object):
 
     def notificationCallback(self, notification):
+<<<<<<< HEAD
         print(notification.name, notification.object.name)
+=======
+        print notification.name, notification.object.name
+>>>>>>> typesupply/master
 
 
 class _TestObservable(object):

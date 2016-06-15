@@ -28,7 +28,10 @@ class Anchor(BaseDictObject):
     """
 
     changeNotificationName = "Anchor.Changed"
+<<<<<<< HEAD
     representationFactories = {}
+=======
+>>>>>>> typesupply/master
 
     def __init__(self, glyph=None, anchorDict=None):
         self._font = None
@@ -116,11 +119,16 @@ class Anchor(BaseDictObject):
         return self.get("x")
 
     def _set_x(self, value):
+<<<<<<< HEAD
         old = self.get("x")
         if value == old:
             return
         self["x"] = value
         self.postNotification("Anchor.XChanged", data=dict(oldValue=old, newValue=value))
+=======
+        self._x = value
+        self.dirty = True
+>>>>>>> typesupply/master
 
     x = property(_get_x, _set_x, doc="The x coordinate. Setting this will post *Anchor.XChanged* and *Anchor.Changed* notifications.")
 
@@ -128,6 +136,7 @@ class Anchor(BaseDictObject):
         return self.get("y")
 
     def _set_y(self, value):
+<<<<<<< HEAD
         old = self.get("y")
         if value == old:
             return
@@ -135,6 +144,10 @@ class Anchor(BaseDictObject):
         self.postNotification("Anchor.YChanged", data=dict(oldValue=old, newValue=value))
 
     y = property(_get_y, _set_y, doc="The y coordinate. Setting this will post *Anchor.YChanged* and *Anchor.Changed* notifications.")
+=======
+        self._y = value
+        self.dirty = True
+>>>>>>> typesupply/master
 
     # name
 
@@ -142,11 +155,16 @@ class Anchor(BaseDictObject):
         return self.get("name")
 
     def _set_name(self, value):
+<<<<<<< HEAD
         old = self.get("name")
         if value == old:
             return
         self["name"] = value
         self.postNotification("Anchor.NameChanged", data=dict(oldValue=old, newValue=value))
+=======
+        self._name = value
+        self.dirty = True
+>>>>>>> typesupply/master
 
     name = property(_get_name, _set_name, doc="The name. Setting this will post *Anchor.NameChanged* and *Anchor.Changed* notifications.")
 
@@ -229,6 +247,7 @@ class Anchor(BaseDictObject):
     # Notification Observation
     # ------------------------
 
+<<<<<<< HEAD
     def endSelfNotificationObservation(self):
         super(Anchor, self).endSelfNotificationObservation()
         self._font = None
@@ -285,6 +304,25 @@ def _test():
     >>> a.x, a.y, a.name, a.identifier, a.color
     (1, 2, '3', '4', '1,1,1,1')
     """
+=======
+    # ----
+    # Undo
+    # ----
+
+    def getDataToSerializeForUndo(self):
+        data = dict(
+            x=self.x,
+            y=self.y,
+            name=self.name
+        )
+        return data
+
+    def loadDeserializedDataFromUndo(self, data):
+        self.x = data["x"]
+        self.y = data["y"]
+        self.name = data["name"]
+
+>>>>>>> typesupply/master
 
 if __name__ == "__main__":
     import doctest

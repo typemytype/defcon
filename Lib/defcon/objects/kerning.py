@@ -51,6 +51,7 @@ class Kerning(BaseDictObject):
     endUndoNotificationName = "Kerning.EndUndo"
     beginRedoNotificationName = "Kerning.BeginRedo"
     endRedoNotificationName = "Kerning.EndRedo"
+<<<<<<< HEAD
     setItemNotificationName = "Kerning.PairSet"
     deleteItemNotificationName = "Kerning.PairDeleted"
     clearNotificationName = "Kerning.Cleared"
@@ -81,6 +82,8 @@ class Kerning(BaseDictObject):
     # -------------
     # Pair Handling
     # -------------
+=======
+>>>>>>> typesupply/master
 
     def get(self, pair, default=0):
         return super(Kerning, self).get(pair, default)

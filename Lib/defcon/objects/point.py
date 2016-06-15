@@ -22,7 +22,11 @@ class Point(object):
         self._identifier = identifier
 
     def __repr__(self):
+<<<<<<< HEAD
         return "<%s position: (%s, %s) type: %s smooth: %s name: %s identifier: %s>" % (self.__class__.__name__, self.x, self.y, str(self.segmentType), str(self.smooth), str(self.name), str(self.identifier))
+=======
+        return "<%s position: (%s, %s) type: %s smooth: %s name: %s>" % (self.__class__.__name__, self.x, self.y, str(self.segmentType), str(self.smooth), str(self.name))
+>>>>>>> typesupply/master
 
     def _get_segmentType(self):
         return self._segmentType
@@ -68,6 +72,7 @@ class Point(object):
         """
         Move the component by **(x, y)**.
         """
+<<<<<<< HEAD
         (x, y) = values
         self.x += x
         self.y += y
@@ -83,6 +88,31 @@ class Point(object):
         self._identifier = value
 
     identifier = property(_get_identifier, _set_identifier, doc="The identifier.")
+=======
+        self.x += x
+        self.y += y
+
+    # ----
+    # Undo
+    # ----
+
+    def getDataToSerializeForUndo(self):
+        data = dict(
+            x=self.x,
+            y=self.y,
+            segmentType=self.segmentType,
+            smooth=self.smooth,
+            name=self.name
+        )
+        return data
+
+    def loadDeserializedDataFromUndo(self, data):
+        self.x = data["x"]
+        self.y = data["y"]
+        self.segmentType = data["segmentType"]
+        self.smooth = data["smooth"]
+        self.name = data["name"]
+>>>>>>> typesupply/master
 
 
 if __name__ == "__main__":

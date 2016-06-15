@@ -71,6 +71,7 @@ class Groups(BaseDictObject):
     endUndoNotificationName = "Groups.EndUndo"
     beginRedoNotificationName = "Groups.BeginRedo"
     endRedoNotificationName = "Groups.EndRedo"
+<<<<<<< HEAD
     setItemNotificationName = "Groups.GroupSet"
     deleteItemNotificationName = "Groups.GroupDeleted"
     clearNotificationName = "Groups.Cleared"
@@ -105,6 +106,8 @@ class Groups(BaseDictObject):
     def endSelfNotificationObservation(self):
         super(Groups, self).endSelfNotificationObservation()
         self._font = None
+=======
+>>>>>>> typesupply/master
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ class Features(BaseObject):
     endUndoNotificationName = "Features.EndUndo"
     beginRedoNotificationName = "Features.BeginRedo"
     endRedoNotificationName = "Features.EndRedo"
+<<<<<<< HEAD
     representationFactories = {}
 
     def __init__(self, font=None):
@@ -35,6 +36,11 @@ class Features(BaseObject):
             self._font = weakref.ref(font)
         super(Features, self).__init__()
         self.beginSelfNotificationObservation()
+=======
+
+    def __init__(self):
+        super(Features, self).__init__()
+>>>>>>> typesupply/master
         self._dirty = False
         self._text = None
 
@@ -57,8 +63,12 @@ class Features(BaseObject):
     # ----
 
     def _set_text(self, value):
+<<<<<<< HEAD
         oldValue = self._text
         if oldValue == value:
+=======
+        if self._text == value:
+>>>>>>> typesupply/master
             return
         self._text = value
         self.postNotification("Features.TextChanged", data=dict(oldValue=oldValue, newValue=value))

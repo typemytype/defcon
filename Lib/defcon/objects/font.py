@@ -64,6 +64,7 @@ class Font(BaseObject):
     """
 
     changeNotificationName = "Font.Changed"
+<<<<<<< HEAD
     representationFactories = {}
 
     def __init__(self, path=None,
@@ -72,6 +73,12 @@ class Font(BaseObject):
                     guidelineClass=None,
                     glyphClass=None, glyphContourClass=None, glyphPointClass=None, glyphComponentClass=None, glyphAnchorClass=None, glyphImageClass=None):
 
+=======
+
+    def __init__(self, path=None,
+                    kerningClass=None, infoClass=None, groupsClass=None, featuresClass=None, libClass=None, unicodeDataClass=None,
+                    glyphClass=None, glyphContourClass=None, glyphPointClass=None, glyphComponentClass=None, glyphAnchorClass=None):
+>>>>>>> typesupply/master
         super(Font, self).__init__()
         self._dispatcher = NotificationCenter()
         self.beginSelfNotificationObservation()
@@ -176,6 +183,7 @@ class Font(BaseObject):
             layer = self.newLayer("public.default")
             self._layers.defaultLayer = layer
 
+<<<<<<< HEAD
     def _get_dispatcher(self):
         return self._dispatcher
 
@@ -189,6 +197,36 @@ class Font(BaseObject):
         return self._layers.defaultLayer
 
     _glyphSet = property(_get_glyphSet, doc="Convenience for getting the main layer.")
+=======
+    def _instantiateGlyphObject(self):
+        glyph = self._glyphClass(
+            contourClass=self._glyphContourClass,
+            pointClass=self._glyphPointClass,
+            componentClass=self._glyphComponentClass,
+            anchorClass=self._glyphAnchorClass,
+            libClass=self._libClass
+        )
+        return glyph
+
+    def _loadGlyph(self, name):
+        if self._glyphSet is None or not self._glyphSet.has_key(name):
+            raise KeyError, '%s not in font' % name
+        glyph = self._instantiateGlyphObject()
+        pointPen = glyph.getPointPen()
+        self._glyphSet.readGlyph(glyphName=name, glyphObject=glyph, pointPen=pointPen)
+        glyph.dirty = False
+        self._glyphs[name] = glyph
+        self._setParentDataInGlyph(glyph)
+        self._stampGlyphDataState(glyph)
+        return glyph
+
+    def _setParentDataInGlyph(self, glyph):
+        glyph.setParent(self)
+        glyph.dispatcher = self.dispatcher
+        glyph.addObserver(observer=self, methodName="_objectDirtyStateChange", notification="Glyph.Changed")
+        glyph.addObserver(observer=self, methodName="_glyphNameChange", notification="Glyph.NameChanged")
+        glyph.addObserver(observer=self, methodName="_glyphUnicodesChange", notification="Glyph.UnicodesChanged")
+>>>>>>> typesupply/master
 
     def newGlyph(self, name):
         """
@@ -196,7 +234,23 @@ class Font(BaseObject):
         If a glyph with that name already exists, the existing
         glyph will be replaced with the new glyph.
         """
+<<<<<<< HEAD
         return self._glyphSet.newGlyph(name)
+=======
+        if name in self:
+            self._unicodeData.removeGlyphData(name, self[name].unicodes)
+        glyph = self._instantiateGlyphObject()
+        glyph.name = name
+        self._glyphs[name] = glyph
+        self._setParentDataInGlyph(glyph)
+        self.dirty = True
+        # a glyph by the same name could be
+        # scheduled for deletion
+        if name in self._scheduledForDeletion:
+            self._scheduledForDeletion.remove(name)
+        # keep the keys up to date
+        self._keys.add(name)
+>>>>>>> typesupply/master
 
     def insertGlyph(self, glyph, name=None):
         """
@@ -532,8 +586,13 @@ class Font(BaseObject):
                 reader = UFOReader(self._path)
                 d = reader.readLib()
                 self._lib.update(d)
+<<<<<<< HEAD
                 self._lib.enableNotifications()
             self._stampLibDataState(reader)
+=======
+            self._lib.addObserver(observer=self, methodName="_objectDirtyStateChange", notification="Lib.Changed")
+            self._stampLibDataState()
+>>>>>>> typesupply/master
         return self._lib
 
     lib = property(_get_lib, doc="The font's :class:`Lib` object.")
@@ -1079,10 +1138,28 @@ class Font(BaseObject):
             if obj._dataOnDisk:
                 return True
             return False
+<<<<<<< HEAD
         # time stamp mismatch
         if modTime != obj._dataOnDiskTimeStamp:
             data = reader.readBytesFromPath(fileName)
             if data != obj._dataOnDisk:
+=======
+        path = os.path.join(self._path, fileName)
+        # file is not in UFO
+        if not os.path.exists(path):
+            # if there was data in the file before
+            if obj._dataOnDisk:
+                return True
+            return False
+        # mod time mismatch
+        modTime = os.stat(path).st_mtime
+        if obj._dataOnDiskTimeStamp != modTime:
+            f = open(path, "rb")
+            text = f.read()
+            f.close()
+            # text mismatch
+            if text != obj._dataOnDisk:
+>>>>>>> typesupply/master
                 return True
         # fallback
         return False
@@ -1229,6 +1306,7 @@ class Font(BaseObject):
         loading is complete, a *Font.ReloadedGlyphs* notification
         will be posted.
         """
+<<<<<<< HEAD
         defaultLayerName = self.layers.defaultLayer.name
         layerData = dict(
             layers={
@@ -1259,6 +1337,39 @@ class Font(BaseObject):
         self.postNotification(notification="Font.ReloadedLayers")
         self.postNotification(notification="Font.ReloadedGlyphs")
 
+=======
+        for glyphName in glyphNames:
+            if glyphName not in self._glyphs:
+                self._loadGlyph(glyphName)
+            else:
+                glyph = self._glyphs[glyphName]
+                glyph.destroyAllRepresentations(None)
+                glyph.clear()
+                pointPen = glyph.getPointPen()
+                self._glyphSet.readGlyph(glyphName=glyphName, glyphObject=glyph, pointPen=pointPen)
+                glyph.dirty = False
+                self._stampGlyphDataState(glyph)
+        data = dict(glyphNames=glyphNames)
+        self.dispatcher.postNotification(notification="Font.ReloadedGlyphs", observable=self, data=data)
+        # post a change notification for any glyphs that
+        # reference the reloaded glyphs via components.
+        componentReferences = self.componentReferences
+        referenceChanges = set()
+        for glyphName in glyphNames:
+            if glyphName not in componentReferences:
+                continue
+            for reference in componentReferences[glyphName]:
+                if reference in glyphNames:
+                    continue
+                if reference not in self._glyphs:
+                    continue
+                if reference in referenceChanges:
+                    continue
+                glyph = self._glyphs[reference]
+                glyph.destroyAllRepresentations(None)
+                glyph.dispatcher.postNotification(notification=glyph.changeNotificationName, observable=glyph)
+                referenceChanges.add(reference)
+>>>>>>> typesupply/master
 
     # -----------------------------
     # UFO Format Version Conversion
